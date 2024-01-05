@@ -11,56 +11,69 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::time::Instant;
 
-struct WeatherStationMeasurement {
+struct Measurement {
     name: String,
-    temperature: f64,
+    temperature: i64,
 }
 
-impl From<&str> for WeatherStationMeasurement {
+impl From<&str> for Measurement {
     fn from(line: &str) -> Self {
         let (name_as_str, temperature_as_str) = line.split_once(';').unwrap();
         let name: String = name_as_str.to_owned();
-        let temperature: f64 = temperature_as_str.parse::<f64>().unwrap();
-        WeatherStationMeasurement { name, temperature }
+        let temperature: i64 = (temperature_as_str.parse::<f64>().unwrap() * 10.0) as i64;
+        Measurement { name, temperature }
     }
 }
 
-struct WeatherStationStatistics {
+struct Statistics {
     name: String,
-    min: f64,
-    max: f64,
-    sum: f64,
+    min: i64,
+    max: i64,
+    sum: i64,
     count: usize,
 }
 
-impl WeatherStationStatistics {
+impl Statistics {
+
+    fn get_min(&self) -> f64 {
+        format!("{:.1$}", (self.min as f64 / 10.0), 1)
+            .parse::<f64>()
+            .unwrap()        
+    }
+
+    fn get_max(&self) -> f64 {
+        format!("{:.1$}", (self.max as f64 / 10.0), 1)
+            .parse::<f64>()
+            .unwrap()        
+    }
+
     fn get_mean(&self) -> f64 {
-        format!("{:.1$}", (self.sum / self.count as f64), 1)
+        format!("{:.1$}", (self.sum as f64 / (10.0 * self.count as f64)), 1)
             .parse::<f64>()
             .unwrap()
     }
 }
 
-impl Default for WeatherStationStatistics {
+impl Default for Statistics {
     fn default() -> Self {
         Self {
             name: String::from(""),
-            min: f64::INFINITY,
-            max: f64::NEG_INFINITY,
-            sum: 0.0,
+            min: i64::MAX,
+            max: i64::MIN,
+            sum: 0,
             count: 0,
         }
     }
 }
 
-impl Display for WeatherStationStatistics {
+impl Display for Statistics {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}={}/{}/{}",
             self.name,
-            self.min,
-            self.max,
+            self.get_min(),
+            self.get_max(),
             self.get_mean()
         )
     }
@@ -78,9 +91,8 @@ fn main() {
     let path: PathBuf = PathBuf::from(&cli.path);
     let input: String = std::fs::read_to_string(path).unwrap();
 
-    let fold_op = |mut acc: FxHashMap<String, WeatherStationStatistics>,
-                   m: WeatherStationMeasurement| {
-        let stats: &mut WeatherStationStatistics = acc.entry(m.name.to_string()).or_default();
+    let fold_op = |mut acc: FxHashMap<String, Statistics>, m: Measurement| -> FxHashMap<String, Statistics> {
+        let stats: &mut Statistics = acc.entry(m.name.to_string()).or_default();
         stats.name = m.name;
         stats.min = stats.min.min(m.temperature);
         stats.max = stats.max.max(m.temperature);
@@ -89,10 +101,9 @@ fn main() {
         acc
     };
 
-    let op = |mut acc: FxHashMap<String, WeatherStationStatistics>,
-              map: FxHashMap<String, WeatherStationStatistics>| {
+    let op = |mut acc: FxHashMap<String, Statistics>, map: FxHashMap<String, Statistics>| -> FxHashMap<String, Statistics> {
         for (name, stats) in map {
-            let acc_stats: &mut WeatherStationStatistics = acc.entry(name).or_default();
+            let acc_stats: &mut Statistics = acc.entry(name).or_default();
             acc_stats.name = stats.name;
             acc_stats.min = acc_stats.min.min(stats.min);
             acc_stats.max = acc_stats.max.max(stats.max);
@@ -103,25 +114,25 @@ fn main() {
     };
 
     let now: Instant = Instant::now();
-    let result: FxHashMap<String, WeatherStationStatistics> = input
+    let result: FxHashMap<String, Statistics> = input
         .par_lines()
         .filter(|line: &&str| !line.is_empty())
-        .map(|line: &str| WeatherStationMeasurement::from(line))
+        .map(|line: &str| Measurement::from(line))
         .fold(
-            FxHashMap::<String, WeatherStationStatistics>::default,
+            FxHashMap::<String, Statistics>::default,
             fold_op,
         )
-        .reduce(FxHashMap::<String, WeatherStationStatistics>::default, op);
+        .reduce(FxHashMap::<String, Statistics>::default, op);
     let duration: Duration = now.elapsed();
     println!("Results for {} generated in {:?}", &cli.path, duration);
 
     let file: File = File::create(cli.path.replace("measurements", "results")).unwrap();
     let mut writer: BufWriter<File> = BufWriter::new(file);
 
-    let mut sorted_result: Vec<&WeatherStationStatistics> =
-        result.values().collect::<Vec<&WeatherStationStatistics>>();
+    let mut sorted_result: Vec<&Statistics> =
+        result.values().collect::<Vec<&Statistics>>();
     sorted_result.sort_by(
-        |a: &&WeatherStationStatistics, b: &&WeatherStationStatistics| a.name.cmp(&b.name),
+        |a: &&Statistics, b: &&Statistics| a.name.cmp(&b.name),
     );
 
     for statistics in sorted_result {
