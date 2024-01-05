@@ -5,6 +5,8 @@ use rand_distr::Normal;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
+use std::time::Duration;
+use std::time::Instant;
 
 const STD_DEV: f64 = 10.0;
 
@@ -455,12 +457,17 @@ fn get_weather_stations() -> Vec<WeatherStation> {
 
 fn main() {
     let cli: Cli = Cli::parse();
+
+    let now: Instant = Instant::now();
     let weather_stations: Vec<WeatherStation> = get_weather_stations();
-    let file: File = File::create(format!("measurements_{}.txt", cli.size)).unwrap();
+    let path: String = format!("measurements_{}.txt", cli.size);
+    let file: File = File::create(&path).unwrap();
     let mut writer: BufWriter<File> = BufWriter::new(file);
 
     for _ in 0..cli.size {
         let station: &WeatherStation = weather_stations.choose(&mut rand::thread_rng()).unwrap();
         writeln!(writer, "{};{}", station.name, station.get_measurement()).unwrap();
     }
+    let duration: Duration = now.elapsed();
+    println!("{} generated in {:?}", &path, duration);
 }
