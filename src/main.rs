@@ -1,7 +1,7 @@
 use clap::Parser;
 use rayon::iter::ParallelIterator;
 use rayon::prelude::*;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fs::File;
@@ -19,7 +19,7 @@ struct WeatherStationMeasurement {
 impl From<&str> for WeatherStationMeasurement {
     fn from(line: &str) -> Self {
         let (name_as_str, temperature_as_str) = line.split_once(';').unwrap();
-        let name = name_as_str.to_owned();
+        let name: String = name_as_str.to_owned();
         let temperature: f64 = temperature_as_str.parse::<f64>().unwrap();
         WeatherStationMeasurement { name, temperature }
     }
@@ -78,39 +78,40 @@ fn main() {
     let path: PathBuf = PathBuf::from(&cli.path);
     let input: String = std::fs::read_to_string(path).unwrap();
 
+    let fold_op = |mut acc: FxHashMap<String, WeatherStationStatistics>,
+                   m: WeatherStationMeasurement| {
+        let stats: &mut WeatherStationStatistics = acc.entry(m.name.to_string()).or_default();
+        stats.name = m.name;
+        stats.min = stats.min.min(m.temperature);
+        stats.max = stats.max.max(m.temperature);
+        stats.sum += m.temperature;
+        stats.count += 1;
+        acc
+    };
+
+    let op = |mut acc: FxHashMap<String, WeatherStationStatistics>,
+              map: FxHashMap<String, WeatherStationStatistics>| {
+        for (name, stats) in map {
+            let acc_stats: &mut WeatherStationStatistics = acc.entry(name).or_default();
+            acc_stats.name = stats.name;
+            acc_stats.min = acc_stats.min.min(stats.min);
+            acc_stats.max = acc_stats.max.max(stats.max);
+            acc_stats.sum += stats.sum;
+            acc_stats.count += stats.count;
+        }
+        acc
+    };
+
     let now: Instant = Instant::now();
-    let result: HashMap<String, WeatherStationStatistics> = input
+    let result: FxHashMap<String, WeatherStationStatistics> = input
         .par_lines()
         .filter(|line: &&str| !line.is_empty())
         .map(|line: &str| WeatherStationMeasurement::from(line))
         .fold(
-            HashMap::<String, WeatherStationStatistics>::new,
-            |mut acc: HashMap<String, WeatherStationStatistics>, m: WeatherStationMeasurement| {
-                let stats: &mut WeatherStationStatistics =
-                    acc.entry(m.name.to_string()).or_default();
-                stats.name = m.name;
-                stats.min = stats.min.min(m.temperature);
-                stats.max = stats.max.max(m.temperature);
-                stats.sum += m.temperature;
-                stats.count += 1;
-                acc
-            },
+            FxHashMap::<String, WeatherStationStatistics>::default,
+            fold_op,
         )
-        .reduce(
-            HashMap::<String, WeatherStationStatistics>::new,
-            |mut acc: HashMap<String, WeatherStationStatistics>,
-             map: HashMap<String, WeatherStationStatistics>| {
-                for (name, stats) in map {
-                    let acc_stats: &mut WeatherStationStatistics = acc.entry(name).or_default();
-                    acc_stats.name = stats.name;
-                    acc_stats.min = acc_stats.min.min(stats.min);
-                    acc_stats.max = acc_stats.max.max(stats.max);
-                    acc_stats.sum += stats.sum;
-                    acc_stats.count += stats.count;
-                }
-                acc
-            },
-        );
+        .reduce(FxHashMap::<String, WeatherStationStatistics>::default, op);
     let duration: Duration = now.elapsed();
     println!("Results for {} generated in {:?}", &cli.path, duration);
 
@@ -119,7 +120,9 @@ fn main() {
 
     let mut sorted_result: Vec<&WeatherStationStatistics> =
         result.values().collect::<Vec<&WeatherStationStatistics>>();
-    sorted_result.sort_by(|a, b| a.name.cmp(&b.name));
+    sorted_result.sort_by(
+        |a: &&WeatherStationStatistics, b: &&WeatherStationStatistics| a.name.cmp(&b.name),
+    );
 
     for statistics in sorted_result {
         writeln!(writer, "{}", statistics).unwrap();
