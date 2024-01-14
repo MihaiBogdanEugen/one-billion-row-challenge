@@ -75,10 +75,14 @@ fn main() {
     let filter_op = |line: &&str| -> bool { !line.is_empty() };
 
     let map_op = |line: &str| -> (String, i64) {
-        let (name_as_str, temperature_as_str) = line.split_once(';').unwrap();
-        let name: String = name_as_str.to_owned();
-        let temperature: i64 = (temperature_as_str.parse::<f64>().unwrap() * 10.0) as i64;
-        (name, temperature)
+        line.split_once(';')
+            .map(|(name_as_str, temperature_as_str)| {
+                (
+                    name_as_str.to_owned(),
+                    (temperature_as_str.parse::<f64>().unwrap() * 10.0) as i64,
+                )
+            })
+            .unwrap()
     };
 
     let fold_op = |mut acc: FxHashMap<String, Statistics>,
