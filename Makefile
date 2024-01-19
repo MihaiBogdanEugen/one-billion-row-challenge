@@ -9,11 +9,11 @@ build:
 
 ## generate-input:  Generate input file
 generate-input: build
-	cargo run --release --bin generate_input -- --size=$(size)
+	cargo run --release --bin generate_input -- $(size)
 
-## run: Run the solver for the one-billion-row-challenge
+## run: Run the solver for the obrc
 run: build
-	cargo run --release --bin one-billion-row-challenge -- --path=$(path)
+	cargo run --release --bin obrc -- $(path)
 
 ## update: Update dependencies listed in Cargo.lock
 update:

@@ -1,14 +1,17 @@
-use clap::Parser;
-use rayon::iter::ParallelIterator;
+mod util;
+
 use rayon::prelude::*;
-use rustc_hash::FxHashMap;
 use std::collections::BTreeMap;
+use std::env::args;
+use std::fs::read_to_string;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::path::PathBuf;
 use std::time::Duration;
 use std::time::Instant;
+
+use crate::util::hash::FastMap;
 
 struct Statistics {
     curr_min: i64,
@@ -32,7 +35,7 @@ impl Statistics {
         self.count += 1;
     }
 
-    fn merge(&mut self, other: Statistics) {
+    fn merge(&mut self, other: &Statistics) {
         self.curr_min = self.curr_min.min(other.curr_min);
         self.curr_max = self.curr_max.max(other.curr_max);
         self.acc_sum += other.acc_sum;
@@ -60,20 +63,14 @@ impl Default for Statistics {
     }
 }
 
-#[derive(Parser)]
-#[command()]
-struct Cli {
-    #[arg(short, long)]
-    path: String,
-}
-
 fn main() {
-    let cli: Cli = Cli::parse();
-    let path: PathBuf = PathBuf::from(&cli.path);
-    if !path.exists() {
-        panic!("Path {:?} does not exist!", path);
-    }
-    let input: String = std::fs::read_to_string(path).unwrap();
+    let path_str: String = args()
+        .nth(1)
+        .unwrap_or(String::from("measurements_1000000000.txt"));
+    let path: PathBuf = PathBuf::from(&path_str);
+    assert!(path.exists(), "Path {:?} does not exist!", path);
+
+    let input: String = read_to_string(path).unwrap();
 
     let filter_op = |line: &&str| -> bool { !line.is_empty() };
 
@@ -88,29 +85,29 @@ fn main() {
             .unwrap()
     };
 
-    let fold_op = |mut acc: FxHashMap<String, Statistics>,
+    let fold_op = |mut acc: FastMap<String, Statistics>,
                    (name, temperature): (String, i64)|
-     -> FxHashMap<String, Statistics> {
+     -> FastMap<String, Statistics> {
         let stats: &mut Statistics = acc.entry(name.to_string()).or_default();
         stats.update(temperature);
         acc
     };
 
-    let reduce_op = |mut acc: FxHashMap<String, Statistics>,
-                     map: FxHashMap<String, Statistics>|
-     -> FxHashMap<String, Statistics> {
+    let reduce_op = |mut acc: FastMap<String, Statistics>,
+                     map: FastMap<String, Statistics>|
+     -> FastMap<String, Statistics> {
         for (name, stats) in map {
             let acc_stats: &mut Statistics = acc.entry(name).or_default();
-            acc_stats.merge(stats);
+            acc_stats.merge(&stats);
         }
         acc
     };
 
-    let identity = FxHashMap::<String, Statistics>::default;
+    let identity = FastMap::<String, Statistics>::default;
 
     let now: Instant = Instant::now();
 
-    let mut result: FxHashMap<String, Statistics> = input
+    let mut result: FastMap<String, Statistics> = input
         .par_lines()
         .filter(filter_op)
         .map(map_op)
@@ -121,9 +118,10 @@ fn main() {
         .for_each(|stats: &mut Statistics| stats.compute());
 
     let duration: Duration = now.elapsed();
-    println!("Results for {} generated in {:?}", &cli.path, duration);
+    println!("Results for {} generated in {:?}", &path_str, duration);
 
-    let file: File = File::create(cli.path.replace("measurements", "results")).unwrap();
+    let file: File = File::create(path_str.replace("measurements", "results"))
+        .unwrap_or_else(|_| panic!("Cannot create results fine!"));
     let mut writer: BufWriter<File> = BufWriter::new(file);
 
     for (name, stats) in BTreeMap::from_par_iter(result.into_par_iter()) {
