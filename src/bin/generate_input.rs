@@ -11,7 +11,7 @@ use std::time::Instant;
 const STD_DEV: f64 = 10.0;
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command()]
 struct Cli {
     #[arg(short, long)]
     size: usize,

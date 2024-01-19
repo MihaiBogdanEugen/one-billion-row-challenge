@@ -61,7 +61,7 @@ impl Default for Statistics {
 }
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command()]
 struct Cli {
     #[arg(short, long)]
     path: String,
@@ -70,6 +70,9 @@ struct Cli {
 fn main() {
     let cli: Cli = Cli::parse();
     let path: PathBuf = PathBuf::from(&cli.path);
+    if !path.exists() {
+        panic!("Path {:?} does not exist!", path);
+    }
     let input: String = std::fs::read_to_string(path).unwrap();
 
     let filter_op = |line: &&str| -> bool { !line.is_empty() };
