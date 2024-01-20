@@ -16,7 +16,7 @@ struct Statistics {
     curr_min: i64,
     curr_max: i64,
     acc_sum: i64,
-    count: usize,
+    count: u64,
     min: f64,
     max: f64,
     mean: f64,
@@ -71,7 +71,7 @@ fn main() {
 
     let mut result: FastMap<&str, Statistics> = input
         .par_lines()
-        .filter(|line: &&str| -> bool { !line.is_empty() })
+        //.filter(|line: &&str| -> bool { !line.is_empty() })
         .map(|line: &str| -> (&str, i64) {
             line.split_once(';')
                 .map(|(name, temperature_as_str)| {
