@@ -67,47 +67,40 @@ fn main() {
 
     let input: String = read_to_string(path).unwrap();
 
-    let filter_op = |line: &&str| -> bool { !line.is_empty() };
-
-    let map_op = |line: &str| -> (String, i64) {
-        line.split_once(';')
-            .map(|(name_as_str, temperature_as_str)| {
-                (
-                    name_as_str.to_owned(),
-                    (to::<f64>(temperature_as_str) * 10.0) as i64,
-                )
-            })
-            .unwrap()
-    };
-
-    let fold_op = |mut acc: FastMap<String, Statistics>,
-                   (name, temperature): (String, i64)|
-     -> FastMap<String, Statistics> {
-        let stats: &mut Statistics = acc.entry(name.to_string()).or_default();
-        stats.update(temperature);
-        acc
-    };
-
-    let reduce_op = |mut acc: FastMap<String, Statistics>,
-                     map: FastMap<String, Statistics>|
-     -> FastMap<String, Statistics> {
-        for (name, stats) in map {
-            let acc_stats: &mut Statistics = acc.entry(name).or_default();
-            acc_stats.merge(&stats);
-        }
-        acc
-    };
-
-    let identity = FastMap::<String, Statistics>::default;
-
     let now: Instant = Instant::now();
 
-    let mut result: FastMap<String, Statistics> = input
+    let mut result: FastMap<&str, Statistics> = input
         .par_lines()
-        .filter(filter_op)
-        .map(map_op)
-        .fold(identity, fold_op)
-        .reduce(identity, reduce_op);
+        .filter(|line: &&str| -> bool { !line.is_empty() })
+        .map(|line: &str| -> (&str, i64) {
+            line.split_once(';')
+                .map(|(name, temperature_as_str)| {
+                    (name, (to::<f64>(temperature_as_str) * 10.0) as i64)
+                })
+                .unwrap()
+        })
+        .fold(
+            FastMap::<&str, Statistics>::default,
+            |mut acc: FastMap<&str, Statistics>,
+             (name, temperature): (&str, i64)|
+             -> FastMap<&str, Statistics> {
+                let stats: &mut Statistics = acc.entry(name).or_default();
+                stats.update(temperature);
+                acc
+            },
+        )
+        .reduce(
+            FastMap::<&str, Statistics>::default,
+            |mut acc: FastMap<&str, Statistics>,
+             map: FastMap<&str, Statistics>|
+             -> FastMap<&str, Statistics> {
+                for (name, stats) in map {
+                    let acc_stats: &mut Statistics = acc.entry(name).or_default();
+                    acc_stats.merge(&stats);
+                }
+                acc
+            },
+        );
     result
         .values_mut()
         .for_each(|stats: &mut Statistics| stats.compute());
