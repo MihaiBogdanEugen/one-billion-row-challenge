@@ -1,5 +1,6 @@
-mod util;
-
+use obrc::util::hash::FastMap;
+use obrc::util::parsing::to;
+use obrc::util::rounding::round_one_digit_precision;
 use rayon::prelude::*;
 use std::collections::BTreeMap;
 use std::env::args;
@@ -11,8 +12,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::time::Instant;
 
-use crate::util::hash::FastMap;
-
 struct Statistics {
     curr_min: i64,
     curr_max: i64,
@@ -21,10 +20,6 @@ struct Statistics {
     min: f64,
     max: f64,
     mean: f64,
-}
-
-fn round_one_digit_precision(x: f64) -> f64 {
-    format!("{:.1$}", x, 1).parse::<f64>().unwrap()
 }
 
 impl Statistics {
@@ -79,7 +74,7 @@ fn main() {
             .map(|(name_as_str, temperature_as_str)| {
                 (
                     name_as_str.to_owned(),
-                    (temperature_as_str.parse::<f64>().unwrap() * 10.0) as i64,
+                    (to::<f64>(temperature_as_str) * 10.0) as i64,
                 )
             })
             .unwrap()

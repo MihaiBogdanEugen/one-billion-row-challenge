@@ -10,6 +10,3 @@ make generate-input size=1000000000
 ```shell
 make run path=measurements_1000000000.txt
 ```
-
-## Reading
-- [] https://docs.rs/rayon/1.5.0/rayon/iter/trait.ParallelIterator.html#method.fold
