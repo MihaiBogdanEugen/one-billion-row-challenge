@@ -15,6 +15,10 @@ generate-input: build
 run: build
 	cargo run --release --bin obrc -- $(path)
 
+## bench: Run the criterion benchmark for measurements_1000000000.txt
+bench:
+	cargo bench
+
 ## update: Update dependencies listed in Cargo.lock
 update:
 	cargo update

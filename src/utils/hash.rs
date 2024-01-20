@@ -12,16 +12,16 @@ use std::hash::Hasher;
 use std::ops::BitXor;
 
 /// Type alias for [`HashSet`] using [`FxHasher`].
-pub type FastSet<T> = HashSet<T, BuildFxHasher>;
+pub type FastHashSet<T> = HashSet<T, BuildFxHasher>;
 
-/// Convenience methods to contruct a [`FastSet`].
-pub trait FastSetBuilder<T> {
+/// Convenience methods to contruct a [`FastHashSet`].
+pub trait FastHashSetBuilder<T> {
     fn new() -> Self;
     fn with_capacity(capacity: usize) -> Self;
     fn build<const N: usize>(array: [T; N]) -> Self;
 }
 
-impl<T: Eq + Hash> FastSetBuilder<T> for FastSet<T> {
+impl<T: Eq + Hash> FastHashSetBuilder<T> for FastHashSet<T> {
     fn new() -> Self {
         Self::with_hasher(BuildFxHasher)
     }
@@ -38,16 +38,16 @@ impl<T: Eq + Hash> FastSetBuilder<T> for FastSet<T> {
 }
 
 /// Type alias for [`HashMap`] using [`FxHasher`].
-pub type FastMap<K, V> = HashMap<K, V, BuildFxHasher>;
+pub type FastHashMap<K, V> = HashMap<K, V, BuildFxHasher>;
 
-/// Convenience methods to contruct a [`FastMap`].
-pub trait FastMapBuilder<K, V> {
+/// Convenience methods to contruct a [`FastHashMap`].
+pub trait FastHashMapBuilder<K, V> {
     fn new() -> Self;
     fn with_capacity(capacity: usize) -> Self;
     fn build<const N: usize>(array: [(K, V); N]) -> Self;
 }
 
-impl<K: Eq + Hash, V> FastMapBuilder<K, V> for FastMap<K, V> {
+impl<K: Eq + Hash, V> FastHashMapBuilder<K, V> for FastHashMap<K, V> {
     fn new() -> Self {
         Self::with_hasher(BuildFxHasher)
     }
