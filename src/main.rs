@@ -22,13 +22,13 @@ fn main() {
     let input: String = read_to_string(path).unwrap();
     let result: FastHashMap<&str, Statistics> = solve(&input);
     println!(
-        "[rayon_map_fold_reduce] Results for {} generated in {:?}",
+        "[rayon_map_fold_reduce] Result for {} generated in {:?}",
         &path_str,
         now.elapsed()
     );
 
-    let file: File = File::create(path_str.replace("measurements", "results"))
-        .unwrap_or_else(|_| panic!("Cannot create results fine!"));
+    let file: File = File::create(path_str.replace("measurements", "result"))
+        .unwrap_or_else(|_| panic!("Cannot create result file!"));
     let mut writer: BufWriter<File> = BufWriter::new(file);
 
     for (name, stats) in BTreeMap::from_par_iter(result.into_par_iter()) {
