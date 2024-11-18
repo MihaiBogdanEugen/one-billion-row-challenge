@@ -39,4 +39,4 @@ fmt:
 clippy:
 	cargo clippy --all-targets --all-features --verbose
 
-.PHONY: help build run build-release run-release update check clean fmt clippy
+.PHONY: help build generate-input run bench update check clean fmt clippy
