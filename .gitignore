@@ -19,4 +19,4 @@ Cargo.lock
 /target
 
 measurements_*
-result_*
+results_*
