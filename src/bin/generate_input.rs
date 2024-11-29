@@ -1,12 +1,13 @@
-use rand::seq::SliceRandom;
-use rand_distr::Distribution;
-use rand_distr::Normal;
-use std::env::args;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::time::Duration;
 use std::time::Instant;
+
+use clap::Parser;
+use rand::seq::SliceRandom;
+use rand_distr::Distribution;
+use rand_distr::Normal;
 
 const STD_DEV: f64 = 10.0;
 
@@ -155,7 +156,7 @@ fn get_weather_stations() -> Vec<WeatherStation> {
         WeatherStation::new("Erzurum", 5.1),
         WeatherStation::new("Fairbanks", -2.3),
         WeatherStation::new("Fianarantsoa", 17.9),
-        WeatherStation::new("Flores,  Petén", 26.4),
+        WeatherStation::new("Flores, Petén", 26.4),
         WeatherStation::new("Frankfurt", 10.6),
         WeatherStation::new("Fresno", 17.9),
         WeatherStation::new("Fukuoka", 17.0),
@@ -448,20 +449,22 @@ fn get_weather_stations() -> Vec<WeatherStation> {
     ]
 }
 
-fn main() {
-    let size: usize = args().nth(1).map_or(1_000_000_000, |size_as_str: String| {
-        size_as_str
-            .parse::<usize>()
-            .unwrap_or_else(|_| panic!("Provided argument is not usize"))
-    });
+#[derive(Parser)]
+#[command()]
+struct Cli {
+    #[arg(short, long, value_parser = clap::value_parser!(usize), default_value_t = 1_000_000_000_usize)]
+    size: usize,
+}
 
+fn main() {
+    let cli: Cli = Cli::parse();
     let now: Instant = Instant::now();
     let weather_stations: Vec<WeatherStation> = get_weather_stations();
-    let path: String = format!("measurements_{}.txt", size);
+    let path: String = format!("measurements_{}.txt", cli.size);
     let file: File = File::create(&path).unwrap();
     let mut writer: BufWriter<File> = BufWriter::new(file);
 
-    for _ in 0..size {
+    for _ in 0..cli.size {
         let station: &WeatherStation = weather_stations.choose(&mut rand::thread_rng()).unwrap();
         writeln!(writer, "{};{}", station.name, station.get_measurement()).unwrap();
     }

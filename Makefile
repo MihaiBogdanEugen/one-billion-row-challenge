@@ -9,11 +9,15 @@ build:
 
 ## generate-input:  Generate input file
 generate-input: build
-	cargo run --release --bin generate_input -- $(size)
+	cargo run --release --bin generate_input -- --size $(size)
 
 ## run: Run the solver for the obrc
 run: build
-	cargo run --release --bin obrc -- $(path)
+	cargo run --release --bin obrc -- --input-path $(input-path) --solution $(solution) 
+
+## test: Run the tests for the obrc
+test: build
+	cargo test --verbose
 
 ## bench: Run the criterion benchmark for measurements_1000000000.txt
 bench:

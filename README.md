@@ -8,5 +8,5 @@ make generate-input size=1000000000
 
 ## Run
 ```shell
-make run path=measurements_1000000000.txt
+make run input-path=measurements_1000000000.txt solution=rayon-fx-hash
 ```
