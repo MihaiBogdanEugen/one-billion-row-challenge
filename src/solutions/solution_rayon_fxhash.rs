@@ -122,8 +122,8 @@ mod tests {
     use std::collections::HashSet;
     use std::fs::read_to_string;
 
-    use crate::solutions::solution_rayon_fxhash::SolutionRayonFxHash;
-    use crate::solutions::solver::Solver;
+    use super::SolutionRayonFxHash;
+    use super::Solver;
 
     #[test]
     fn test_solution_1000000() {

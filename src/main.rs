@@ -6,6 +6,7 @@ use std::time::Instant;
 
 use clap::Parser;
 use clap::ValueEnum;
+use obrc::solutions::solution_basic::SolutioBasic;
 use obrc::solutions::solution_naive::SolutioNaive;
 use obrc::solutions::solution_rayon_fxhash::SolutionRayonFxHash;
 use obrc::solutions::solver::Solver;
@@ -22,6 +23,7 @@ struct Cli {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Solution {
+    Basic,
     Naive,
     RayonFxHash,
 }
@@ -37,6 +39,7 @@ fn main() {
 
     let now: Instant = Instant::now();
     let output: String = match cli.solution {
+        Solution::Basic => SolutioBasic::solve_obrc(&cli.input_path),
         Solution::Naive => SolutioNaive::solve_obrc(&cli.input_path),
         Solution::RayonFxHash => SolutionRayonFxHash::solve_obrc(&cli.input_path),
     };

@@ -99,8 +99,8 @@ mod tests {
     use std::collections::HashSet;
     use std::fs::read_to_string;
 
-    use crate::solutions::solution_naive::SolutioNaive;
-    use crate::solutions::solver::Solver;
+    use super::SolutioNaive;
+    use super::Solver;
 
     #[test]
     fn test_solution_1000000() {
