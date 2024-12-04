@@ -45,6 +45,4 @@ criterion_group! {
     targets = benchmark_solution_rayon_fxhash
 }
 
-criterion_main!(benches_basic, 
-    benches_naive, 
-    benches_rayon_fxhash);
+criterion_main!(benches_basic, benches_naive, benches_rayon_fxhash);

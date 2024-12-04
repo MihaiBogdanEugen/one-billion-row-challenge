@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use std::fs::read_to_string;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Result;
 use std::fmt::Write;
+use std::fs::read_to_string;
 
 use crate::utils::rounding::round_one_digit_precision;
 
@@ -25,7 +25,8 @@ impl Solver for SolutioBasic {
                         stats.min = stats.min.min(temperature);
                         stats.max = stats.max.max(temperature);
                         stats.count += 1;
-                        stats.mean = (stats.mean * (stats.count - 1) as f64 + temperature) / stats.count as f64;
+                        stats.mean = (stats.mean * (stats.count - 1) as f64 + temperature)
+                            / stats.count as f64;
                     })
                     .or_insert(Statistics {
                         min: temperature,
@@ -60,7 +61,13 @@ struct Statistics {
 
 impl Display for Statistics {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{}/{}/{}", round_one_digit_precision(self.min), round_one_digit_precision(self.max), round_one_digit_precision(self.mean))
+        write!(
+            f,
+            "{}/{}/{}",
+            round_one_digit_precision(self.min),
+            round_one_digit_precision(self.max),
+            round_one_digit_precision(self.mean)
+        )
     }
 }
 
